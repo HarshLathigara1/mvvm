@@ -20,10 +20,10 @@ import android.widget.Toast;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.List;
-import java.util.zip.Inflater;
 
 public class MainActivity extends AppCompatActivity {
     public static final int ADD_NEW_REQUEST = 1;
+    public static final int EDIT_NEW_REQUEST = 2;
     // we created note class and entity for table
     // our repository will usr note dao to retive all entries from our table
     // and it will be connceted with live data to repository
@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
         floatingActionButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, AddnewNoteActivity.class);
+                Intent intent = new Intent(MainActivity.this, AddEditNoteActivity.class);
                 startActivityForResult(intent, ADD_NEW_REQUEST);
             }
         });
@@ -83,17 +83,47 @@ public class MainActivity extends AppCompatActivity {
             }
         }).attachToRecyclerView(recyclerView);
 
+        noteadapter.setOnItemClickListner(new Noteadapter.OnItemClickLisner() {
+            @Override
+            public void onItemClick(Notes note) {
+                // here we are passing our data to addedit activity to update our data
+                Intent intent = new Intent(MainActivity.this, AddEditNoteActivity.class);
+                intent.putExtra(AddEditNoteActivity.EXTRA_ID, note.getId());
+                intent.putExtra(AddEditNoteActivity.EXTRA_TITLE, note.getTitle());
+                intent.putExtra(AddEditNoteActivity.EXTRA_DESC, note.getDesc());
+                intent.putExtra(AddEditNoteActivity.EXTRA_PRY, note.getPriority());
+                startActivityForResult(intent, EDIT_NEW_REQUEST);
+
+
+            }
+        });
+
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == ADD_NEW_REQUEST && resultCode == RESULT_OK) {
-            String title = data.getStringExtra(AddnewNoteActivity.EXTRA_TITLE);
-            String desc = data.getStringExtra(AddnewNoteActivity.EXTRA_DESC);
-            int pry = data.getIntExtra(AddnewNoteActivity.EXTRA_PRY, 1);
+            String title = data.getStringExtra(AddEditNoteActivity.EXTRA_TITLE);
+            String desc = data.getStringExtra(AddEditNoteActivity.EXTRA_DESC);
+            int pry = data.getIntExtra(AddEditNoteActivity.EXTRA_PRY, 1);
             Notes note = new Notes(title, desc, pry);
             noteViewModel.insert(note);
+        } else if (requestCode == EDIT_NEW_REQUEST && resultCode == RESULT_OK) {
+            int id  = data.getIntExtra(AddEditNoteActivity.EXTRA_ID,-1);
+            if (id == -1){
+                Toast.makeText(this, "Note cant be updatad", Toast.LENGTH_LONG).show();
+                return;
+            }
+
+            String title = data.getStringExtra(AddEditNoteActivity.EXTRA_TITLE);
+            String desc = data.getStringExtra(AddEditNoteActivity.EXTRA_DESC);
+            int pry = data.getIntExtra(AddEditNoteActivity.EXTRA_PRY, 1);
+            Notes notes = new Notes(title,desc,pry);
+            notes.setId(id);
+            noteViewModel.updater(notes);
+            Toast.makeText(this, "Note Updated", Toast.LENGTH_LONG).show();
+
         } else {
             Toast.makeText(this, "Note not saved", Toast.LENGTH_LONG).show();
         }
